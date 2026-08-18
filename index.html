@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<meta name="robots" content="noindex">
 <title>New LMS 교안 준비기</title>
 <style>
   /* Soft-gold token set, hand-rolled (tools/ allows no build step, no dependency).
@@ -126,9 +127,24 @@
   .okline { color: var(--ok); font-size: 13px; padding: 8px 0 2px; }
   footer { max-width: 860px; margin: 0 auto; padding: 0 24px 40px 78px;
            color: var(--muted); font-size: 12px; }
+
+  /* Access gate -- active only when served from the public URL */
+  #gate { display: none; }
+  body.gated .wrap, body.gated footer { display: none; }
+  body.gated #gate { display: grid; place-items: center; min-height: 100vh; padding: 24px; }
 </style>
 </head>
 <body>
+<div id="gate">
+  <div class="card" style="max-width: 380px; width: 100%;">
+    <div class="card-h"><div class="card-t">New LMS 교안 준비기</div>
+      <div class="card-d">모두의연구소 구성원만 쓸 수 있어요. 회사 Google 계정으로 로그인해 주세요.</div></div>
+    <div class="card-c">
+      <div id="gsiBtn"></div>
+      <p class="muted" id="gateMsg" style="margin: 10px 0 0;"></p>
+    </div>
+  </div>
+</div>
 <div class="wrap">
 <header>
   <h1>New LMS 교안 준비기</h1>
@@ -253,6 +269,47 @@
 
 <footer>파일은 어디로도 전송되지 않아요. 모든 처리가 브라우저 안에서 끝나요.</footer>
 
+<script>
+(function () {
+  'use strict';
+  // Access gate: Google sign-in, @modulabs.co.kr only. Runs ONLY when served
+  // over the public URL -- file:// and localhost skip it, so local/offline use
+  // stays network-free. Client-side: it gates the screen, not the repo assets.
+  // CLIENT_ID: Web application OAuth client, Internal consent screen,
+  // authorized JavaScript origin https://wklee-hash.github.io
+  var CLIENT_ID = 'PASTE_GOOGLE_OAUTH_CLIENT_ID';
+  var local = location.protocol === 'file:' ||
+    /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if (local) return;
+  document.body.classList.add('gated');
+  var msg = document.getElementById('gateMsg');
+  if (CLIENT_ID.indexOf('PASTE_') === 0) {
+    msg.textContent = '접근 설정을 준비하고 있어요. 조금만 기다려 주세요.';
+    return;
+  }
+  function onCred(resp) {
+    try {
+      var b = resp.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      var payload = JSON.parse(atob(b + '==='.slice((b.length + 3) % 4)));
+      if (payload.hd === 'modulabs.co.kr') {
+        document.body.classList.remove('gated');
+        return;
+      }
+    } catch (e) { /* fall through to the message below */ }
+    msg.textContent = '모두의연구소 계정(@modulabs.co.kr)으로 로그인해 주세요.';
+  }
+  var s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.onload = function () {
+    google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCred, auto_select: true });
+    google.accounts.id.renderButton(document.getElementById('gsiBtn'),
+      { type: 'standard', text: 'signin_with', width: 280 });
+    google.accounts.id.prompt();
+  };
+  s.onerror = function () { msg.textContent = '로그인 모듈을 불러오지 못했어요. 새로고침해 주세요.'; };
+  document.head.appendChild(s);
+})();
+</script>
 <script src="prep.js"></script>
 <script>
 (function () {
