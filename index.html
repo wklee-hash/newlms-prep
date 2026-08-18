@@ -141,7 +141,10 @@
          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="m6 9 6 6 6-6"/></svg>
   </summary>
-  <div class="acc-body"><ul class="chg" id="changeList"></ul></div>
+  <div class="acc-body">
+    <p class="muted" style="margin: 10px 0 6px;">원본을 업로드 규격에 맞추면서 바꾼 내용이에요.</p>
+    <ul class="chg" id="changeList"></ul>
+  </div>
 </details>
 
 <details class="acc hide gated-el" id="status">
@@ -152,7 +155,8 @@
       <path d="m6 9 6 6 6-6"/></svg>
   </summary>
   <div class="acc-body">
-    <p class="muted" style="margin: 10px 0 6px;">FAIL: 업로드 깨짐 · WARN: 가이드 권장 · INFO: 참고</p>
+    <p class="muted" style="margin: 10px 0 6px;">변환된 파일을 업로드 규격으로 검사한 결과예요. 원본 검사는 위 파일 이름 옆에 있어요. 남은 FAIL과 WARN은 변환기가 자동으로 고치지 못한 것들이라 직접 확인이 필요해요.</p>
+    <p class="muted" style="margin: 0 0 6px;">FAIL: 업로드가 깨져요 · WARN: 가이드 권장 · INFO: 참고</p>
     <div id="findings"></div>
   </div>
 </details>
@@ -243,7 +247,7 @@
       }
       var n = { FAIL: 0, WARN: 0, INFO: 0 };
       N.findings(nb).forEach(function (x) { n[x.sev] += 1; });
-      $('before').textContent = '원본: FAIL ' + n.FAIL + ' · WARN ' + n.WARN + ' · INFO ' + n.INFO;
+      $('before').textContent = '원본 검사: FAIL ' + n.FAIL + ' · WARN ' + n.WARN + ' · INFO ' + n.INFO;
       $('fileName').textContent = file.name;
       setReady(true);
       refresh();
