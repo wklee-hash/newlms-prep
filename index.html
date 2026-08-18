@@ -211,6 +211,9 @@
         <div class="card-d">노트북에는 들어가지 않아요. 답안 파일로 받아서 어드민에 직접 입력하세요.</div></div>
       <div class="card-c">
         <div class="grid g3">
+          <div><label>노드 제목</label>
+            <input type="text" autocomplete="off" id="ntitle"
+                   placeholder="F-1. 인공지능 개발자가 되기 위한 위대한 첫 걸음"></div>
           <div><label>NodeVersion ID</label>
             <input type="text" autocomplete="off" id="nvid" placeholder="5068"></div>
           <div><label>Storage path</label>
@@ -221,8 +224,9 @@
         <p class="muted" style="margin: 10px 0 0;">Storage path 는
           <code>{코스코드}-{순서}-{추가정보}/data</code> 형식이에요. 노드 이름과 다를 수 있으니
           실제 값을 꼭 확인하세요. (예: E-7-L 노드가 DS-ML-10/data 사용)<br>
-          node slug 는 노드마다 하나씩 지어요. 형식: <code>{파일이름}_newlms_{날짜}</code>
-          — 예: 1-1-1_newlms_250331</p>
+          노드 제목은 마침표가 든 「코드. 제목」 형태만 저장돼요(어드민이 검증해요).<br>
+          node slug 는 노드마다 하나씩 지어 NodeVersion 폼의 Resource Slug 에서 골라요.
+          형식: <code>{파일이름}_newlms_{날짜}</code>, 예: 1-1-1_newlms_250331</p>
       </div>
     </div>
   </li>
@@ -393,8 +397,8 @@
       fillCodeExtra: true,
       stripOutputs: true,
       dropStepId: true,
-      admin: { nodeVersionId: $('nvid').value.trim(), storagePath: $('storage').value.trim(),
-               nodeSlug: $('slug').value.trim() }
+      admin: { nodeTitle: $('ntitle').value.trim(), nodeVersionId: $('nvid').value.trim(),
+               storagePath: $('storage').value.trim(), nodeSlug: $('slug').value.trim() }
     };
   }
 
@@ -532,7 +536,7 @@
     $('outName').textContent = N.outputName(S.name, a.code) + '.ipynb';
   }
 
-  ['code', 'level', 'ver', 'nvid', 'storage', 'slug'].forEach(function (id) {
+  ['code', 'level', 'ver', 'ntitle', 'nvid', 'storage', 'slug'].forEach(function (id) {
     $(id).addEventListener('input', refresh); $(id).addEventListener('change', refresh);
   });
 
