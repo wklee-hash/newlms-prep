@@ -377,39 +377,6 @@
     };
   }
 
-  /** The admin-side work order: values that never enter the notebook. */
-  function answerSheet(srcName, answers) {
-    var a = answers || {};
-    var admin = a.admin || {};
-    var lines = [
-      '# newlms answers for ' + srcName,
-      '# 이 값들은 노트북에 안 들어간다. 장고 어드민에서 손으로 넣는다.',
-      '',
-      'node_title=' + (admin.nodeTitle || '확인 필요'),
-      'nodeversion_id=' + (admin.nodeVersionId || '?'),
-      'storage_path=' + (admin.storagePath || '?'),
-      'node_slug=' + (admin.nodeSlug || '확인 필요'),
-      '',
-      '# storage_path: GCS {코스코드}-{순서}-{추가정보}/data, 실습환경 ~/data 로 마운트 (dict 120).',
-      '#   노드 이름으로 짐작 금지 — E-7-L 노드가 DS-ML-10/data 를 쓴다 (dict 363).',
-      '# node_title: 마침표가 든 "{코드}. 제목" 형태여야 한다. Node.title 의 RegexValidator',
-      '#   ("Node title contain slug or number")가 다른 형태의 저장을 막는다. Step 제목',
-      '#   마침표 규칙(dict 1234)과는 별개의 검증이다.',
-      '# node_slug: 리서치 13기 표의 값({ipynb스템}_newlms_{MMDD})은 웨그테일 페이지',
-      '#   슬러그로 추정되며 현행 업로드에 필요한지 불명 — 모르면 비워 둔다 (2026-08-18).',
-      '#   NodeVersion 의 Resource Slug 는 별개로, 실습환경(이미지·사양) 프로파일 선택이다.',
-      '# 업로드는 노드 버전 하위에 스텝을 만들지 않은 상태에서 한다 (Django 업로드 가이드).',
-      '',
-      'code=' + (a.code || ''),
-      'level=' + (a.level || ''),
-      'lang_version=' + (a.langVersion || '')
-    ];
-    (a.sections || []).forEach(function (s, i) {
-      lines.push('section.' + (i + 1) + '=' + s.title + ' | ' + s.minutes + 'min | ' + s.type);
-    });
-    return lines.join('\n') + '\n';
-  }
-
   root.findings = findings;
   root.readSections = readSections;
   root.readLevel = readLevel;
@@ -418,7 +385,6 @@
   root.proposeTitle = proposeTitle;
   root.convert = convert;
   root.plan = plan;
-  root.answerSheet = answerSheet;
   root.LEVELS = LEVELS;
   root.SECTION_TYPES = SECTION_TYPES;
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.NewLMS = {}));
