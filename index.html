@@ -284,7 +284,7 @@
   document.body.classList.add('gated');
   var msg = document.getElementById('gateMsg');
   if (CLIENT_ID.indexOf('PASTE_') === 0) {
-    msg.textContent = '접근 설정을 준비하고 있어요. 조금만 기다려 주세요.';
+    msg.textContent = '관리자가 Google 로그인 연결을 마치면 여기에 로그인 버튼이 떠요. 아직 준비 중이에요.';
     return;
   }
   function onCred(resp) {
