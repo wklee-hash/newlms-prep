@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>New LMS 교안 준비기</title>
+<style>
+  /* Soft-gold token set, hand-rolled (tools/ allows no build step, no dependency).
+     Neutrals follow a warm ivory/gold ramp (Radix-gold-like); severity colours are
+     conventional red/orange/blue/green, all AA-contrast on their tinted chips. */
+  :root {
+    --bg: #faf7ef; --card: #fffdf7; --fg: #3b3422; --muted: #6f6550;
+    --border: #e6dcc0; --accent: #f5efdc;
+    --primary: #8a6d1a; --primary-hover: #74590f; --primary-fg: #fffdf7;
+    --gold: #b8912c; --ring: rgba(138, 109, 26, .22);
+    --fail: #b91c1c; --fail-bg: #fdecec; --fail-bd: #f5c6c2;
+    --warn: #c2410c; --warn-bg: #fff3e8; --warn-bd: #fbd3ae;
+    --info: #1d4ed8; --info-bg: #eef4ff; --info-bd: #c5d8fc;
+    --ok: #15803d;   --ok-bg: #effaf2;   --ok-bd: #b9e7c5;
+    --r: 12px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 14px/1.6 -apple-system, "Segoe UI", "Malgun Gothic", system-ui, sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 36px 24px 40px; }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; margin: 0 0 6px; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+
+  /* wizard stepper */
+  ol.steps { list-style: none; margin: 0; padding: 0; }
+  .step { position: relative; padding: 0 0 22px 54px; }
+  .step::before { content: ""; position: absolute; left: 17px; top: 42px; bottom: -2px;
+                  width: 2px; background: var(--border); }
+  .step:last-child::before { display: none; }
+  .num { position: absolute; left: 0; top: 2px; width: 36px; height: 36px; border-radius: 50%;
+         border: 1px solid var(--border); background: var(--card); display: grid;
+         place-items: center; font-size: 14px; font-weight: 600; color: var(--muted);
+         box-shadow: 0 1px 2px rgba(59, 52, 34, .06); transition: .2s; }
+  body.ready .num { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+  body:not(.ready) .gated { opacity: .45; pointer-events: none; user-select: none; }
+
+  /* card */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+          box-shadow: 0 1px 2px rgba(59, 52, 34, .06); }
+  .card-h { padding: 16px 20px 0; }
+  .card-t { font-size: 14px; font-weight: 600; }
+  .card-d { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .card-c { padding: 14px 20px 18px; }
+
+  /* form */
+  label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+  input[type=text], select { font: inherit; width: 100%; height: 36px; padding: 0 10px;
+    border: 1px solid var(--border); border-radius: 8px; background: #fff; color: inherit; }
+  input[type=text]:focus, select:focus { outline: none; border-color: var(--gold);
+    box-shadow: 0 0 0 3px var(--ring); }
+  .grid { display: grid; gap: 14px; }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: 2.4fr .6fr 1fr auto; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .orig { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+  .muted { color: var(--muted); font-size: 12.5px; }
+  .hide { display: none; }
+  code { background: var(--accent); border-radius: 5px; padding: 1px 5px; font-size: 12px;
+         font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+  /* buttons */
+  .btn { font: inherit; font-size: 13px; font-weight: 500; height: 36px; padding: 0 14px;
+         border: 1px solid var(--border); border-radius: 8px; background: var(--card);
+         color: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+         transition: background .15s, border-color .15s; }
+  .btn:hover { background: var(--accent); border-color: var(--gold); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-fg); }
+  .btn.primary:hover { background: var(--primary-hover); }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted);
+               height: 30px; padding: 0 8px; font-size: 12.5px; }
+  .btn.ghost:hover { background: var(--accent); color: var(--fg); border-color: transparent; }
+
+  /* dropzone */
+  #drop { border: 2px dashed var(--border); border-radius: var(--r); padding: 38px;
+          text-align: center; color: var(--muted); cursor: pointer; font-size: 13.5px;
+          transition: .15s; }
+  #drop:hover, #drop.over { border-color: var(--gold); color: var(--fg); background: var(--accent); }
+  .chip { background: #f3ecd2; border: 1px solid #decf9c; border-radius: 8px; color: #6b5410;
+          padding: 4px 10px; font-size: 12.5px; font-weight: 600; }
+
+  /* badges */
+  .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 10px;
+           font-size: 11.5px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+  .badge.fail { color: var(--fail); background: var(--fail-bg); border-color: var(--fail-bd); }
+  .badge.warn { color: var(--warn); background: var(--warn-bg); border-color: var(--warn-bd); }
+  .badge.info { color: var(--info); background: var(--info-bg); border-color: var(--info-bd); }
+  .badge.ok   { color: var(--ok);   background: var(--ok-bg);   border-color: var(--ok-bd); }
+  .badge.zero { opacity: .4; }
+
+  /* cells + sections */
+  .cellrow { display: flex; gap: 10px; align-items: center; border: 1px solid var(--border);
+             border-radius: 8px; padding: 5px 8px 5px 12px; margin-bottom: 6px; background: #fff;
+             font-size: 12px; }
+  .cellrow .kind { font-weight: 600; flex: 0 0 auto; }
+  .cellrow .idx { color: var(--muted); flex: 0 0 auto; }
+  .cellrow .prev { flex: 1; min-width: 0; color: var(--muted); white-space: nowrap;
+                   overflow: hidden; text-overflow: ellipsis;
+                   font: 11.5px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+  .sec { border: 1px solid var(--border); border-left: 3px solid var(--gold);
+         border-radius: 10px; padding: 12px 14px; margin: 14px 0 10px; background: #fff;
+         box-shadow: 0 1px 2px rgba(59, 52, 34, .07); }
+  .sec .tag { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--gold);
+              margin-bottom: 8px; }
+
+  /* findings accordion */
+  details.acc { background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+                box-shadow: 0 1px 2px rgba(59, 52, 34, .06); margin-left: 54px; }
+  .acc summary { list-style: none; cursor: pointer; display: flex; align-items: center;
+                 gap: 12px; padding: 14px 20px; user-select: none; }
+  .acc summary::-webkit-details-marker { display: none; }
+  .acc .chev { margin-left: auto; color: var(--muted); transition: transform .2s; flex: 0 0 auto; }
+  details[open] .chev { transform: rotate(180deg); }
+  .acc-body { border-top: 1px solid var(--border); padding: 4px 20px 16px; }
+  .f { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid var(--border);
+       font-size: 12.5px; align-items: baseline; }
+  .f:first-child { border-top: none; }
+  .f .badge { flex: 0 0 54px; justify-content: center; }
+  .f .ref { flex: 0 0 76px; color: var(--muted);
+            font: 11.5px ui-monospace, Menlo, Consolas, monospace; }
+  .f .where { flex: 0 0 62px; color: var(--muted); }
+  .okline { color: var(--ok); font-size: 13px; padding: 8px 0 2px; }
+  footer { max-width: 860px; margin: 0 auto; padding: 0 24px 40px 78px;
+           color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>New LMS 교안 준비기</h1>
+  <p>노트북(.ipynb)을 New LMS 업로드 규격에 맞는 파일로 만들어 드려요.</p>
+</header>
+
+<ol class="steps">
+  <li class="step" id="st1">
+    <div class="num">1</div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">노트북 올리기</div>
+        <div class="card-d">원본 파일은 바뀌지 않아요.</div></div>
+      <div class="card-c">
+        <div id="drop">.ipynb 파일을 끌어다 놓거나 클릭해서 선택하세요
+          <input type="file" id="file" accept=".ipynb,application/json" class="hide"></div>
+        <div id="loadedRow" class="row hide" style="justify-content: space-between;">
+          <div class="row" style="gap: 8px;">
+            <span class="chip" id="fileName"></span>
+            <span class="muted" id="before"></span>
+          </div>
+          <button class="btn" id="reset">다른 파일 열기</button>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <li class="step gated">
+    <div class="num">2</div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">노드 정보</div>
+        <div class="card-d">섹션 제목과 모든 셀에 함께 저장되는 값이에요.</div></div>
+      <div class="card-c">
+        <div class="grid g3">
+          <div><label>노드 코드</label>
+            <input type="text" autocomplete="off" id="code" placeholder="CV-AI-DATA-3"></div>
+          <div><label>레벨</label><select id="level"></select></div>
+          <div><label>Python 버전</label>
+            <input type="text" autocomplete="off" id="ver" value="3.8">
+            <div class="orig" id="verOrig"></div></div>
+        </div>
+      </div>
+    </div>
+  </li>
+
+  <li class="step gated">
+    <div class="num">3</div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">섹션 나누기</div>
+        <div class="card-d">섹션 하나가 LMS 스텝 하나가 돼요.
+          내용 수정은 Jupyter 에서 하고, 여기서는 경계와 제목만 정리해요.</div></div>
+      <div class="card-c">
+        <div class="row" style="margin-bottom: 12px;">
+          <button class="btn ghost" id="reprefix">섹션 제목에 노드 코드 붙이기</button>
+        </div>
+        <div id="cells"></div>
+      </div>
+    </div>
+  </li>
+
+  <li class="step gated">
+    <div class="num">4</div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">어드민 입력값</div>
+        <div class="card-d">노트북에는 들어가지 않아요. 답안 파일로 받아서 어드민에 직접 입력하세요.</div></div>
+      <div class="card-c">
+        <div class="grid g3">
+          <div><label>NodeVersion ID</label>
+            <input type="text" autocomplete="off" id="nvid" placeholder="5068"></div>
+          <div><label>Storage path</label>
+            <input type="text" autocomplete="off" id="storage" placeholder="wk-01/data"></div>
+          <div><label>node slug</label>
+            <input type="text" autocomplete="off" id="slug" placeholder="1-1-1_newlms_250331"></div>
+        </div>
+        <p class="muted" style="margin: 10px 0 0;">Storage path 는
+          <code>{코스코드}-{순서}-{추가정보}/data</code> 형식이에요. 노드 이름과 다를 수 있으니
+          실제 값을 꼭 확인하세요. (예: E-7-L 노드가 DS-ML-10/data 사용)<br>
+          node slug 는 노드마다 하나씩 지어요. 형식: <code>{파일이름}_newlms_{날짜}</code>
+          — 예: 1-1-1_newlms_250331</p>
+      </div>
+    </div>
+  </li>
+
+  <li class="step gated">
+    <div class="num">5</div>
+    <div class="card">
+      <div class="card-h"><div class="card-t">변환본 받기</div></div>
+      <div class="card-c">
+        <div id="plan" class="muted" style="margin-bottom: 12px;"></div>
+        <div class="row">
+          <button class="btn primary" id="dl">변환본 다운로드</button>
+          <button class="btn" id="dlAns">답안 파일 다운로드</button>
+          <span class="muted" id="outName"></span>
+        </div>
+        <div class="row" id="chipRow" style="margin-top: 14px; cursor: pointer;"
+             title="검사 결과 열기">
+          <span class="muted">변환 후 판정</span>
+          <span class="row" id="chipBadges" style="gap: 6px;"></span>
+        </div>
+        <p class="muted" style="margin: 12px 0 0;">자동 처리: 실행 결과 비우기 · 코드 셀 정보 채우기 ·
+          step_id 제거 · 섹션 번호 재정렬 · 커널 정보 고정<br>
+          업로드는 스텝이 없는 노드 버전에서 하세요.</p>
+      </div>
+    </div>
+  </li>
+</ol>
+
+<details class="acc gated" id="status">
+  <summary>
+    <span class="card-t">검사 결과</span>
+    <span class="row" id="sumBadges" style="gap: 6px;"></span>
+    <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m6 9 6 6 6-6"/></svg>
+  </summary>
+  <div class="acc-body">
+    <p class="muted" style="margin: 10px 0 8px;">변환본 기준이에요 ·
+      FAIL: 업로드가 깨져요 · WARN: 가이드 권장 · INFO: 참고</p>
+    <div id="findings"></div>
+  </div>
+</details>
+</div>
+
+<footer>파일은 어디로도 전송되지 않아요. 모든 처리가 브라우저 안에서 끝나요.</footer>
+
+<script src="prep.js"></script>
+<script>
+(function () {
+  'use strict';
+  var N = window.NewLMS;
+  if (!N) {
+    document.body.innerHTML = '<p style="padding:40px;font:15px sans-serif">prep.js 를 찾지 못했어요. ' +
+      'index.html 과 같은 폴더에 두세요.</p>';
+    return;
+  }
+  var S = { nb: null, name: '', sections: [] };
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
+
+  N.LEVELS.forEach(function (l) {
+    var o = el('option'); o.value = o.textContent = l; $('level').appendChild(o);
+  });
+
+  /* ---------------------------------------------------------------- load -- */
+  function setReady(yes) {
+    document.body.classList.toggle('ready', yes);
+    $('drop').classList.toggle('hide', yes);
+    $('loadedRow').classList.toggle('hide', !yes);
+    if (!yes) $('status').open = false;
+  }
+
+  function load(file) {
+    var r = new FileReader();
+    r.onload = function () {
+      var nb;
+      try { nb = JSON.parse(r.result); }
+      catch (e) { alert('파일을 읽지 못했어요. ipynb 파일이 맞는지 확인해 주세요. (' + e.message + ')'); return; }
+      if (!nb || !Array.isArray(nb.cells)) { alert('cells 가 없어요. ipynb 파일이 맞는지 확인해 주세요.'); return; }
+      S.nb = nb; S.name = file.name;
+      var code = N.nodeCodeFromName(file.name);
+      $('code').value = code;
+      $('level').value = N.readLevel(nb) || '입문';
+      var fileVer = (nb.metadata && nb.metadata.language_info &&
+                     nb.metadata.language_info.version) || '';
+      $('ver').value = '3.8';
+      $('verOrig').textContent = (fileVer && fileVer !== '3.8') ? '원래: ' + fileVer : '';
+      var n = { FAIL: 0, WARN: 0, INFO: 0 };
+      N.findings(nb).forEach(function (x) { n[x.sev] += 1; });
+      $('before').textContent = '원본: FAIL ' + n.FAIL + ' · WARN ' + n.WARN + ' · INFO ' + n.INFO;
+      // Titles without a period get the proposal pre-filled; every one stays editable.
+      S.sections = N.readSections(nb).map(function (s, i) {
+        return { origin: 'existing', cell: s.cell, orig: s.title,
+                 title: N.proposeTitle(code, i + 1, s.title),
+                 minutes: s.minutes || '15', type: s.type || 'practice' };
+      });
+      $('fileName').textContent = file.name;
+      setReady(true);
+      drawCells();
+      refresh();
+    };
+    r.readAsText(file);
+  }
+
+  $('file').addEventListener('change', function (e) { if (e.target.files[0]) load(e.target.files[0]); });
+  $('drop').addEventListener('click', function () { $('file').click(); });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    $('drop').addEventListener(ev, function (e) { e.preventDefault(); $('drop').classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    $('drop').addEventListener(ev, function (e) { e.preventDefault(); $('drop').classList.remove('over'); });
+  });
+  $('drop').addEventListener('drop', function (e) {
+    if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]);
+  });
+
+  /* ------------------------------------------------------------- answers -- */
+  function answers() {
+    return {
+      code: $('code').value.trim(),
+      level: $('level').value,
+      langVersion: $('ver').value.trim() || '3.8',
+      sections: S.sections.slice().sort(function (a, b) {
+        return (a.origin === 'new' ? a.at : a.cell) - (b.origin === 'new' ? b.at : b.cell);
+      }),
+      // The three cleanups are the upload contract itself, not options — always on.
+      fillCodeExtra: true,
+      stripOutputs: true,
+      dropStepId: true,
+      admin: { nodeVersionId: $('nvid').value.trim(), storagePath: $('storage').value.trim(),
+               nodeSlug: $('slug').value.trim() }
+    };
+  }
+
+  /* ----------------------------------------------------------- rendering -- */
+  function sectionBox(s) {
+    var box = el('div', 'sec');
+    var tag = el('div', 'tag');
+    tag.textContent = s.origin === 'new' ? '새 섹션' : '섹션';
+    box.appendChild(tag);
+
+    var grid = el('div', 'grid g4');
+    grid.appendChild(field('제목', s.title, function (v) { s.title = v; refresh(); },
+                           s.orig && s.orig !== s.title ? '원래: ' + s.orig : ''));
+    grid.appendChild(field('시간(분)', s.minutes, function (v) { s.minutes = v; refresh(); }, ''));
+    grid.appendChild(select('종류', N.SECTION_TYPES, s.type, function (v) { s.type = v; refresh(); }));
+    var rm = el('div');
+    if (s.origin === 'new') {
+      var b = el('button', 'btn ghost');
+      b.textContent = '지우기';
+      b.onclick = function () {
+        S.sections = S.sections.filter(function (x) { return x !== s; });
+        drawCells(); refresh();
+      };
+      rm.style.paddingTop = '24px';
+      rm.appendChild(b);
+    }
+    grid.appendChild(rm);
+    box.appendChild(grid);
+    return box;
+  }
+
+  function field(label, val, on, note) {
+    var w = el('div');
+    var l = el('label'); l.textContent = label; w.appendChild(l);
+    var i = el('input'); i.type = 'text'; i.value = val; i.autocomplete = 'off';
+    i.addEventListener('input', function () { on(i.value); });
+    w.appendChild(i);
+    if (note) { var n = el('div', 'orig'); n.textContent = note; w.appendChild(n); }
+    return w;
+  }
+
+  function select(label, opts, val, on) {
+    var w = el('div');
+    var l = el('label'); l.textContent = label; w.appendChild(l);
+    var s = el('select');
+    opts.forEach(function (o) {
+      var e = el('option'); e.value = e.textContent = o; s.appendChild(e);
+    });
+    s.value = val;
+    s.addEventListener('change', function () { on(s.value); });
+    w.appendChild(s); return w;
+  }
+
+  function preview(cell) {
+    var t = Array.isArray(cell.source) ? cell.source.join('') : (cell.source || '');
+    return t.replace(/\s+/g, ' ').slice(0, 140);
+  }
+
+  function drawCells() {
+    var host = $('cells'); host.innerHTML = '';
+    var existing = {};
+    S.sections.forEach(function (s) { if (s.origin === 'existing') existing[s.cell] = s; });
+
+    S.nb.cells.forEach(function (cell, i) {
+      S.sections.filter(function (s) { return s.origin === 'new' && s.at === i; })
+        .forEach(function (s) { host.appendChild(sectionBox(s)); });
+
+      if (existing[i]) { host.appendChild(sectionBox(existing[i])); return; }
+
+      var d = el('div', 'cellrow');
+      var k = el('span', 'kind');
+      var x = cell.metadata && cell.metadata._extra;
+      k.textContent = cell.cell_type + (x && x.custom_type ? ':' + x.custom_type : '');
+      var idx = el('span', 'idx'); idx.textContent = '#' + i;
+      var p = el('span', 'prev'); p.textContent = preview(cell);
+      var add = el('button', 'btn ghost');
+      add.textContent = '＋ 섹션';
+      add.title = '여기서 새 섹션을 시작해요';
+      add.onclick = function () {
+        if (S.sections.some(function (x) { return x.origin === 'new' && x.at === i; })) return;
+        var ord = S.sections.length + 1;
+        S.sections.push({ origin: 'new', at: i, title: N.proposeTitle($('code').value.trim(), ord, ''),
+                          minutes: '15', type: 'practice' });
+        drawCells(); refresh();
+      };
+      d.appendChild(k); d.appendChild(idx); d.appendChild(p); d.appendChild(add);
+      host.appendChild(d);
+    });
+
+    S.sections.filter(function (s) { return s.origin === 'new' && s.at >= S.nb.cells.length; })
+      .forEach(function (s) { host.appendChild(sectionBox(s)); });
+  }
+
+  function drawBadges(host, c) {
+    host.innerHTML = '';
+    if (!c.FAIL && !c.WARN && !c.INFO) {
+      var b = el('span', 'badge ok'); b.textContent = '통과';
+      host.appendChild(b); return;
+    }
+    [['FAIL', 'fail'], ['WARN', 'warn'], ['INFO', 'info']].forEach(function (p) {
+      var b = el('span', 'badge ' + p[1] + (c[p[0]] ? '' : ' zero'));
+      b.textContent = p[0] + ' ' + c[p[0]];
+      host.appendChild(b);
+    });
+  }
+
+  function refresh() {
+    var a = answers();
+    var out = N.convert(S.nb, a);
+    var fs = N.findings(out);
+    var c = { FAIL: 0, WARN: 0, INFO: 0 };
+    fs.forEach(function (x) { c[x.sev] += 1; });
+    drawBadges($('sumBadges'), c);
+    drawBadges($('chipBadges'), c);
+
+    var host = $('findings'); host.innerHTML = '';
+    if (!fs.length) {
+      var ok = el('div', 'okline'); ok.textContent = '걸리는 항목이 없어요.'; host.appendChild(ok);
+    }
+    fs.forEach(function (x) {
+      var d = el('div', 'f');
+      var b = el('span', 'badge ' + x.sev.toLowerCase()); b.textContent = x.sev; d.appendChild(b);
+      var ref = el('span', 'ref'); ref.textContent = x.ref; d.appendChild(ref);
+      var wh = el('span', 'where'); wh.textContent = x.where; d.appendChild(wh);
+      var m = el('span'); m.textContent = x.msg; d.appendChild(m);
+      host.appendChild(d);
+    });
+
+    var p = N.plan(S.nb, a);
+    $('plan').textContent =
+      '섹션 ' + p.sections + '개(새로 만든 것 ' + p.newSections + '개) · 제목 고침 ' + p.retitled +
+      '개 · 레벨 「' + a.level + '」 도장 ' + (p.levelStamped + p.codeExtraFilled) +
+      '개 셀 · 코드 셀 정보 채움 ' + p.codeExtraFilled + '개 · 실행 결과 비움 ' + p.outputsCleared +
+      '개 · step_id 지움 ' + p.stepIdsDropped + '개';
+    $('outName').textContent = N.outputName(S.name, a.code) + '.ipynb';
+  }
+
+  ['code', 'level', 'ver', 'nvid', 'storage', 'slug'].forEach(function (id) {
+    $(id).addEventListener('input', refresh); $(id).addEventListener('change', refresh);
+  });
+
+  $('reprefix').addEventListener('click', function () {
+    var code = $('code').value.trim();
+    S.sections.forEach(function (s, i) {
+      var bare = s.title.replace(/^[^.]*\.\s*/, '');
+      s.title = N.proposeTitle(code, i + 1, bare);
+    });
+    drawCells(); refresh();
+  });
+
+  $('chipRow').addEventListener('click', function () {
+    $('status').open = true;
+    $('status').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  /* ---------------------------------------------------------- downloads -- */
+  function download(name, text) {
+    var b = new Blob([text], { type: 'application/octet-stream' });
+    var u = URL.createObjectURL(b);
+    var a = el('a'); a.href = u; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(u); }, 1000);
+  }
+  $('dl').addEventListener('click', function () {
+    var a = answers();
+    download(N.outputName(S.name, a.code) + '.ipynb',
+             JSON.stringify(N.convert(S.nb, a), null, 1));
+  });
+  $('dlAns').addEventListener('click', function () {
+    var a = answers();
+    download(N.outputName(S.name, a.code) + '.answers.txt', N.answerSheet(S.name, a));
+  });
+  $('reset').addEventListener('click', function () {
+    S = { nb: null, name: '', sections: [] };
+    $('file').value = '';
+    setReady(false);
+  });
+})();
+</script>
+</body>
+</html>
