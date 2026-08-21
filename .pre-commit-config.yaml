@@ -1,0 +1,20 @@
+# git-iteration: lint runs on every commit (lab convention, applied
+# 2026-08-21). This repo is the deploy mirror of node-converter/docs -
+# files land here by copy, so only syntax and hygiene are checked.
+repos:
+  - repo: local
+    hooks:
+      - id: js-syntax
+        name: node --check on changed JS
+        entry: bash -c 'for f in "$@"; do node --check "$f" || exit 1; done' --
+        language: system
+        files: \.js$
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-added-large-files
+        args: [--maxkb=2000]
