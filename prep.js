@@ -340,17 +340,14 @@
 
     out.cells = cells;
     out.metadata = out.metadata || {};
-    // dict 929 measured only that these EXIST (missing → editor 500s); the
-    // values never gated an upload (non-3.8 measured fine 2026-08-18), so
-    // fill them when absent and leave present ones alone (owner 2026-08-21).
-    if (!out.metadata.kernelspec) {
-      out.metadata.kernelspec = {
-        display_name: 'Python 3 (ipykernel)', language: 'python', name: 'python3'
-      };
-    }
-    if (!out.metadata.language_info) {
-      out.metadata.language_info = { name: 'python', version: a.langVersion || '3.8' };
-    }
+    // Guide values (2025-05-26 guide, dict 929): python3 kernel + version 3.8,
+    // stamped unconditionally — owner 2026-08-21: follow the guide so the
+    // team-facing answer stays one line ("메타데이터는 다 들어가야 한다").
+    // Measured 2026-08-18: values never gated an upload, presence does.
+    out.metadata.kernelspec = {
+      display_name: 'Python 3 (ipykernel)', language: 'python', name: 'python3'
+    };
+    out.metadata.language_info = { name: 'python', version: a.langVersion || '3.8' };
     out.nbformat = 4;
     out.nbformat_minor = 5;
     return out;
@@ -377,8 +374,10 @@
                (c.execution_count !== null && c.execution_count !== undefined));
           }).length : 0,
       levelStamped: cells.filter(function (c) { return !!extra(c); }).length,
-      kernelFilled: !(nb.metadata && nb.metadata.kernelspec),
-      langInfoFilled: !(nb.metadata && nb.metadata.language_info),
+      kernelSet: !(nb.metadata && nb.metadata.kernelspec &&
+                   nb.metadata.kernelspec.name === 'python3'),
+      versionFrom: String((nb.metadata && nb.metadata.language_info &&
+                           nb.metadata.language_info.version) || ''),
       stepIdsDropped: a.dropStepId
         ? cells.filter(function (c) {
             var x = extra(c); return x && x.step_id !== undefined && x.step_id !== null;

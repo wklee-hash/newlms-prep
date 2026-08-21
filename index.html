@@ -333,8 +333,8 @@
     if (p.codeExtraFilled) li('코드 셀 ' + p.codeExtraFilled + '개에 업로드용 정보(_extra)를 채웠어요');
     if (p.stepIdsDropped) li('이전 업로드 흔적(step_id) ' + p.stepIdsDropped + '개를 지웠어요');
     li('난이도를 "' + a.level + '"(으)로 표시했어요 (셀 ' + (p.levelStamped + p.codeExtraFilled) + '개)');
-    if (p.langInfoFilled) li('파이썬 언어 정보(language_info)가 없어서 3.8로 채웠어요');
-    if (p.kernelFilled) li('커널 정보(kernelspec)가 없어서 python3로 채웠어요');
+    if (p.versionFrom !== '3.8') li('파이썬 버전 표기를 3.8로 맞췄어요 (' + (p.versionFrom || '표기 없음') + ' → 3.8)');
+    if (p.kernelSet) li('커널을 python3로 맞췄어요');
     li('Step 번호(section_id)를 sec_1부터 차례로 다시 매겼어요');
   }
 
