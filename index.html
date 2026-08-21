@@ -125,7 +125,7 @@
   <div class="card-h"><div class="card-t">변환 결과</div></div>
   <div class="card-c">
     <div class="row">
-      <span class="muted">레벨</span><select id="level"></select>
+      <span class="muted">난이도</span><select id="level"></select>
       <span class="muted" id="plan"></span>
     </div>
     <div class="row" style="margin-top: 12px;">
@@ -205,7 +205,7 @@
       'index.html 과 같은 폴더에 있어야 함.</p>';
     return;
   }
-  var S = { nb: null, name: '', fileVer: '', sections: [], autoCreated: false };
+  var S = { nb: null, name: '', sections: [], autoCreated: false };
   var $ = function (id) { return document.getElementById(id); };
   function el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
 
@@ -230,8 +230,6 @@
       catch (e) { alert('JSON 파싱 실패. ipynb 파일인지 확인. (' + e.message + ')'); return; }
       if (!nb || !Array.isArray(nb.cells)) { alert('cells 없음. ipynb 파일인지 확인.'); return; }
       S.nb = nb; S.name = file.name;
-      S.fileVer = (nb.metadata && nb.metadata.language_info &&
-                   nb.metadata.language_info.version) || '';
       $('level').value = N.readLevel(nb) || '입문';
       // Titles get an ordinal + period prefix (the admin's str(Step) splits on
       // the period); everything else about the title is left alone.
@@ -316,7 +314,7 @@
     });
 
     var p = N.plan(S.nb, a);
-    $('plan').textContent = '섹션 ' + p.sections + '개로 정리해요. 바뀌는 내용은 아래 변경 내역에 있어요.';
+    $('plan').textContent = 'Step ' + p.sections + '개로 정리해요. 바뀌는 내용은 아래 변경 내역에 있어요.';
     $('outName').textContent = N.outputName(S.name, '') + '.ipynb';
 
     var list = $('changeList'); list.innerHTML = '';
@@ -325,19 +323,19 @@
       if (codes) { e.innerHTML = text; } else { e.textContent = text; }
       list.appendChild(e);
     }
-    if (S.autoCreated) li('원본에 섹션이 없어서 "1. 들어가며" 섹션을 만들었어요');
+    if (S.autoCreated) li('원본에 Step이 없어서 "1. 들어가며" Step을 만들었어요');
     S.sections.forEach(function (s) {
       if (s.origin === 'existing' && s.orig !== s.title) {
-        li('섹션 제목을 바꿨어요: "' + s.orig + '" → "' + s.title + '"');
+        li('Step 제목을 바꿨어요: "' + s.orig + '" → "' + s.title + '"');
       }
     });
     if (p.outputsCleared) li('셀 ' + p.outputsCleared + '개의 실행 결과를 지웠어요 (execution_count 포함)');
     if (p.codeExtraFilled) li('코드 셀 ' + p.codeExtraFilled + '개에 업로드용 정보(_extra)를 채웠어요');
     if (p.stepIdsDropped) li('이전 업로드 흔적(step_id) ' + p.stepIdsDropped + '개를 지웠어요');
     li('난이도를 "' + a.level + '"(으)로 표시했어요 (셀 ' + (p.levelStamped + p.codeExtraFilled) + '개)');
-    if (S.fileVer !== '3.8') li('파이썬 버전 표기를 3.8로 맞췄어요 (' + (S.fileVer || '표기 없음') + ' → 3.8)');
-    li('커널을 python3로 맞췄어요');
-    li('섹션 번호(section_id)를 sec_1부터 차례로 다시 매겼어요');
+    if (p.langInfoFilled) li('파이썬 언어 정보(language_info)가 없어서 3.8로 채웠어요');
+    if (p.kernelFilled) li('커널 정보(kernelspec)가 없어서 python3로 채웠어요');
+    li('Step 번호(section_id)를 sec_1부터 차례로 다시 매겼어요');
   }
 
   $('level').addEventListener('change', refresh);
@@ -355,7 +353,7 @@
              JSON.stringify(N.convert(S.nb, a), null, 1));
   });
   $('reset').addEventListener('click', function () {
-    S = { nb: null, name: '', fileVer: '', sections: [], autoCreated: false };
+    S = { nb: null, name: '', sections: [], autoCreated: false };
     $('file').value = '';
     setReady(false);
   });
